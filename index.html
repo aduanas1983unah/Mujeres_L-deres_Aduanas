@@ -405,7 +405,7 @@ window.openFacebookPortrait=function(url,title){
 })();
 </script><script id="video-carousel-script">
 (function(){
-const DEFAULT_VIDEOS = [{"title": "¡Los Objetivos de Desarrollo Sostenible!", "person": "", "url": "https://www.facebook.com/share/p/1TUXbmDeq5/"}, {"title": "¡ODS 5: Igualdad de Género!", "person": "", "url": "https://www.facebook.com/share/p/18qMZqKhJC/"}, {"title": "Máster Jacqueline Cruz Lanza", "person": "", "url": "https://www.facebook.com/share/v/1CK2iPi5GK/"}, {"title": "Máster Aminta Isabel Maradiaga Vela", "person": "", "url": "https://www.facebook.com/share/v/1DwjYvjGMy/"}];
+const DEFAULT_VIDEOS = [{"title": "¡Los Objetivos de Desarrollo Sostenible!", "person": "", "url": "https://www.facebook.com/reel/1787201055830028/"}, {"title": "¡ODS 5: Igualdad de Género!", "person": "", "url": "https://www.facebook.com/reel/2357556168407259/"}, {"title": "Máster Jacqueline Cruz Lanza", "person": "", "url": "https://www.facebook.com/reel/1667237671615011/"}, {"title": "Máster Aminta Isabel Maradiaga Vela", "person": "", "url": "https://www.facebook.com/reel/3057935317878257/"}];
 const KEY='unah_mujeres_videos_v1';
 const $v=(id)=>document.getElementById(id);
 const validId=id=>/^[A-Za-z0-9_-]{11}$/.test(id);
@@ -424,7 +424,7 @@ function facebookVideoUrl(input){
  if(h==='fb.watch'||/\/(videos|reel|watch|posts|share)\b/.test(u.pathname)||u.searchParams.has('v'))return u.href;
  return null;}catch(e){return null;}
 }
-function facebookEmbed(input){return 'https://www.facebook.com/plugins/video.php?href='+encodeURIComponent(input)+'&show_text=false&width=560';}
+function facebookEmbed(input){return 'https://www.facebook.com/plugins/video.php?height=476&href='+encodeURIComponent(input)+'&show_text=false&width=267&t=0';}
 let videos=DEFAULT_VIDEOS.map(v=>({...v}));
 
 let index=0,paused=false,playing=-1,timer=null;
@@ -442,7 +442,7 @@ function render(){
 function go(i){index=Math.max(0,Math.min(i,maxIndex()));let first=track.firstElementChild;if(first){let gap=parseFloat(getComputedStyle(track).gap)||0;track.style.transform=`translateX(-${index*(first.getBoundingClientRect().width+gap)}px)`}dots.querySelectorAll('button').forEach((b,j)=>b.classList.toggle('active',j===index))}
 function stopAutoplay(){paused=true;clearInterval(timer);timer=null;$v('video-toggle').textContent='▶ Reanudar';$v('video-toggle').setAttribute('aria-label','Reanudar movimiento')}
 function startAutoplay(){if(playing!==-1)return;paused=false;clearInterval(timer);timer=setInterval(()=>{if(!document.hidden&&!$v('video-modal').classList.contains('active'))go(index>=maxIndex()?0:index+1)},5000);$v('video-toggle').textContent='❚❚ Pausar';$v('video-toggle').setAttribute('aria-label','Pausar movimiento')}
-function play(i){let id=youtubeId(videos[i].url),fb=facebookVideoUrl(videos[i].url);if(!id&&!fb)return;stopAutoplay();if(fb){window.openFacebookPortrait(fb,videos[i].title||'Video de Facebook');return;}if(playing!==-1&&playing!==i)render();playing=i;go(Math.min(i,maxIndex()));let box=$v('video-media-'+i);box.innerHTML='';let frame=document.createElement('iframe');frame.src=id?`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`:facebookEmbed(fb)+"&autoplay=true";frame.title='Video: '+(videos[i].title||'Mujeres líderes');frame.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';box.appendChild(frame)}
+function play(i){let id=youtubeId(videos[i].url),fb=facebookVideoUrl(videos[i].url);if(!id&&!fb)return;stopAutoplay();if(playing!==-1&&playing!==i)render();playing=i;go(Math.min(i,maxIndex()));let box=$v('video-media-'+i);box.innerHTML='';let frame=document.createElement('iframe');frame.src=id?`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`:facebookEmbed(fb)+"&autoplay=true";frame.title='Video: '+(videos[i].title||'Mujeres líderes');frame.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';frame.allowFullscreen=true;frame.setAttribute('scrolling','no');frame.referrerPolicy='strict-origin-when-cross-origin';box.appendChild(frame)}
 $v('video-prev').onclick=()=>{stopAutoplay();go(index===0?maxIndex():index-1)};
 $v('video-next').onclick=()=>{stopAutoplay();go(index>=maxIndex()?0:index+1)};
 $v('video-toggle').onclick=()=>paused?startAutoplay():stopAutoplay();
