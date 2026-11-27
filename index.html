@@ -486,45 +486,36 @@ draw();
   const likeButton=document.getElementById('page-like-button');
   const likeCount=document.getElementById('page-like-count');
   const likeStatus=document.getElementById('page-like-status');
-  const base='https://api.counterapi.dev/v1/mujeres-lideres-aduanas-unah-2026/';
-  const likeKey='mujeres-lideres-aduanas-unah-like-v1';
+  const base='https://abacus.jasoncameron.dev/';
+  const namespace='unah-aduanas-mujeres-2026-7c9e41b2';
+  const likeKey='mujeres-lideres-aduanas-abacus-like-v1';
   const fmt=n=>new Intl.NumberFormat('es-HN').format(n);
-  function readCount(data){
-    const n=data&&typeof data.count==='number'?data.count:data&&data.data&&typeof data.data.count==='number'?data.data.count:null;
-    if(n===null||!Number.isFinite(n))throw new Error('Respuesta no válida');
+  async function request(action,key){
+    const r=await fetch(base+action+'/'+namespace+'/'+key,{cache:'no-store'});
+    if(r.status===404 && action==='get')return 0;
+    if(!r.ok)throw new Error('Servicio no disponible');
+    const n=Number((await r.json()).value);
+    if(!Number.isSafeInteger(n)||n<0)throw new Error('Respuesta no válida');
     return n;
   }
-  async function request(path){
-    const r=await fetch(base+path,{method:'GET',cache:'no-store',signal:AbortSignal.timeout(12000)});
-    if(!r.ok)throw new Error('Servicio no disponible');
-    return readCount(await r.json());
-  }
   if(location.protocol==='http:'||location.protocol==='https:'){
-    likeButton.disabled=false;
-    if(visitValue && visitStatus){
-      visitStatus.textContent='Registrando visita…';
-      visitValue.textContent='';
-      const img=document.createElement('img');
-      img.src='https://hits.sh/aduanas1983unah.github.io/Mujeres_L-deres_Aduanas.svg?view=total&label=Visitas&color=0b5aa5';
-      img.alt='Contador de visitas';img.style.cssText='max-width:100%;height:auto;vertical-align:middle';
-      img.onload=()=>{visitStatus.textContent='Visitas registradas';};
-      img.onerror=()=>{visitValue.textContent='—';visitStatus.textContent='Contador temporalmente no disponible';};
-      visitValue.appendChild(img);
-    }
-    try{if(localStorage.getItem(likeKey)==='1'){likeButton.setAttribute('aria-pressed','true');likeStatus.textContent='¡Gracias por tu apoyo!';}}catch(e){}
-    request('corazones').then(n=>{likeCount.textContent=fmt(n);if(likeButton.getAttribute('aria-pressed')!=='true')likeStatus.textContent='Pulsa el corazón si te gustó la página';})
-      .catch(()=>{likeStatus.textContent='Los corazones no están disponibles temporalmente';});
+    let liked=false;
+    try{liked=localStorage.getItem(likeKey)==='1';}catch(e){}
+    likeButton.disabled=liked;
+    likeButton.setAttribute('aria-pressed',String(liked));
+    likeStatus.textContent=liked?'¡Gracias por tu apoyo!':'Pulsa el corazón si te gustó la página';
+    visitStatus.textContent='Registrando visita…';
+    request('hit','visitas').then(n=>{visitValue.textContent=fmt(n);visitStatus.textContent='Visitas registradas';}).catch(()=>{visitStatus.textContent='Contador temporalmente no disponible';});
+    request('get','corazones').then(n=>{if(!liked || likeCount.textContent==='—')likeCount.textContent=fmt(n);}).catch(()=>{if(!liked)likeStatus.textContent='Contador temporalmente no disponible';});
     likeButton.addEventListener('click',async()=>{
-      if(likeButton.getAttribute('aria-pressed')==='true')return;
+      if(liked||likeButton.disabled)return;
       likeButton.disabled=true;likeStatus.textContent='Guardando tu corazón…';
       try{
-        const n=await request('corazones/up');
-        likeCount.textContent=fmt(n);
-        likeButton.setAttribute('aria-pressed','true');
+        const n=await request('hit','corazones');
+        liked=true;likeCount.textContent=fmt(n);likeButton.setAttribute('aria-pressed','true');
         try{localStorage.setItem(likeKey,'1');}catch(e){}
         likeStatus.textContent='¡Gracias por tu apoyo!';
-      }catch(e){likeStatus.textContent='No se pudo guardar. Inténtalo de nuevo.';}
-      finally{likeButton.disabled=false;}
+      }catch(e){likeStatus.textContent='No se pudo guardar. Inténtalo de nuevo.';likeButton.disabled=false;}
     });
   }else{
     visitStatus.textContent='Se activará al publicar la página';
