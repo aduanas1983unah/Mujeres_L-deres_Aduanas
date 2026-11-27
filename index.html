@@ -433,7 +433,7 @@ const escapeHtml=t=>String(t||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 function visible(){return innerWidth<=610?1:innerWidth<=900?2:3}
 function maxIndex(){return Math.max(0,videos.length-visible())}
 function render(){
- track.innerHTML=videos.map((v,i)=>{let id=youtubeId(v.url),fb=facebookVideoUrl(v.url);return `<article class="video-item"><div class="video-media" id="video-media-${i}">${id?`<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" loading="lazy" alt="Miniatura de ${escapeHtml(v.title||'Video '+(i+1))}"><button type="button" class="video-play" data-play="${i}" aria-label="Reproducir video ${i+1}"><span>▶</span></button>`:(fb?`<div class="fb-ods-cover"><div class="fb-ods-symbol">5 <span>♀</span></div><strong>ODS 5 · IGUALDAD DE GÉNERO</strong><p>El liderazgo de las mujeres transforma nuestra sociedad.</p><button type="button" class="fb-ods-play" data-play="${i}" aria-label="Reproducir video de Facebook ${i+1}"><span class="fb-ods-play-icon">▶</span><span>DA PLAY AQUÍ</span></button></div>`:`<div class="video-placeholder"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="15" width="48" height="34" rx="8"/><path d="M27 24l14 8-14 8z"/></svg><small>PRÓXIMAMENTE</small></div>`)}</div><div class="video-info"><small>VIDEO ${String(i+1).padStart(2,'0')} / ${String(videos.length).padStart(2,'0')}</small><h3>${escapeHtml(v.title||'Una historia que inspira')}</h3><p>${escapeHtml(v.person||'Video de Facebook')}</p></div></article>`}).join('');
+ track.innerHTML=videos.map((v,i)=>{let id=youtubeId(v.url),fb=facebookVideoUrl(v.url);return `<article class="video-item"><div class="video-media" id="video-media-${i}">${id?`<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" loading="lazy" alt="Miniatura de ${escapeHtml(v.title||'Video '+(i+1))}"><button type="button" class="video-play" data-play="${i}" aria-label="Reproducir video ${i+1}"><span>▶</span></button>`:(fb?`<iframe src="${escapeHtml(facebookEmbed(fb))}" title="${escapeHtml(v.title)}" loading="lazy" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>`:`<div class="video-placeholder"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="15" width="48" height="34" rx="8"/><path d="M27 24l14 8-14 8z"/></svg><small>PRÓXIMAMENTE</small></div>`)}</div><div class="video-info"><small>VIDEO ${String(i+1).padStart(2,'0')} / ${String(videos.length).padStart(2,'0')}</small><h3>${escapeHtml(v.title||'Una historia que inspira')}</h3><p>${escapeHtml(v.person||'Video de Facebook')}</p></div></article>`}).join('');
  dots.innerHTML=videos.map((v,i)=>`<button type="button" data-slide="${i}" aria-label="Ir a video ${i+1}" class="${i===index?'active':''}"></button>`).join('');
  track.querySelectorAll('[data-play]').forEach(b=>b.addEventListener('click',()=>play(Number(b.dataset.play))));
  dots.querySelectorAll('[data-slide]').forEach(b=>b.addEventListener('click',()=>{stopAutoplay();go(Math.min(Number(b.dataset.slide),maxIndex()))}));
@@ -456,7 +456,7 @@ $v('video-manage').onclick=editor;$v('video-close').onclick=close;$v('video-moda
 $v('video-save').onclick=()=>{if(save()){close();alert('Videos guardados en este navegador. Para publicar los cambios para todos, descarga el HTML actualizado y súbelo a GitHub Pages.')}};
 $v('video-download').onclick=()=>{if(!save())return;let doc=document.documentElement.cloneNode(true);let script=doc.querySelector('#video-carousel-script');script.textContent=script.textContent.replace(/const DEFAULT_VIDEOS = \[[\s\S]*?\];/, 'const DEFAULT_VIDEOS = '+JSON.stringify(videos).replace(/</g,'\\u003c')+';');let featured=doc.querySelector('#ods-feature-script');if(featured){featured.textContent=featured.textContent.replace(/const FEATURE_DEFAULT_URL = \"[^\"]*\";/,'const FEATURE_DEFAULT_URL = '+JSON.stringify(window.getOdsFeatureVideo?window.getOdsFeatureVideo():'')+';');}let featureForm=doc.querySelector('#ods-feature-form');if(featureForm)featureForm.hidden=true;let featurePlayer=doc.querySelector('#ods-feature-player');if(featurePlayer)featurePlayer.innerHTML='';let modal=doc.querySelector('#video-modal');modal.classList.remove('active');modal.setAttribute('aria-hidden','true');doc.querySelector('body').classList.remove('no-scroll');doc.querySelector('#video-track').innerHTML='';doc.querySelector('#video-dots').innerHTML='';doc.querySelector('#video-edit-rows').innerHTML='';let file=new Blob(['<!doctype html>\n'+doc.outerHTML],{type:'text/html;charset=utf-8'});let a=document.createElement('a');a.href=URL.createObjectURL(file);a.download='index.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&$v('video-modal').classList.contains('active'))close()});
-render();startAutoplay();
+render();stopAutoplay();
 })();
 </script><script id="ods-feature-script">
 (()=>{
@@ -495,11 +495,12 @@ draw();
     return n;
   }
   async function request(path){
-    const r=await fetch(base+path,{method:'GET',cache:'no-store'});
+    const r=await fetch(base+path,{method:'GET',cache:'no-store',signal:AbortSignal.timeout(12000)});
     if(!r.ok)throw new Error('Servicio no disponible');
     return readCount(await r.json());
   }
   if(location.protocol==='http:'||location.protocol==='https:'){
+    likeButton.disabled=false;
     visitStatus.textContent='Registrando visita…';
     request('visitas/up').then(n=>{visitValue.textContent=fmt(n);visitStatus.textContent='Visitas registradas';})
       .catch(()=>{
@@ -513,7 +514,7 @@ draw();
         visitValue.appendChild(img);
       });
     try{if(localStorage.getItem(likeKey)==='1'){likeButton.setAttribute('aria-pressed','true');likeStatus.textContent='¡Gracias por tu apoyo!';}}catch(e){}
-    request('corazones/').then(n=>{likeCount.textContent=fmt(n);if(likeButton.getAttribute('aria-pressed')!=='true')likeStatus.textContent='Pulsa el corazón si te gustó la página';})
+    request('corazones').then(n=>{likeCount.textContent=fmt(n);if(likeButton.getAttribute('aria-pressed')!=='true')likeStatus.textContent='Pulsa el corazón si te gustó la página';})
       .catch(()=>{likeStatus.textContent='Los corazones no están disponibles temporalmente';});
     likeButton.addEventListener('click',async()=>{
       if(likeButton.getAttribute('aria-pressed')==='true')return;
